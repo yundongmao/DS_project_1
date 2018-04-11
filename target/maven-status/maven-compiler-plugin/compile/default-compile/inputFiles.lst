@@ -1,0 +1,12 @@
+/git/TEST_DS/src/main/java/activitystreamer/Server.java
+/git/TEST_DS/src/main/java/activitystreamer/messages/AuthenticateMsg.java
+/git/TEST_DS/src/main/java/activitystreamer/messages/InvalidMsg.java
+/git/TEST_DS/src/main/java/activitystreamer/Client.java
+/git/TEST_DS/src/main/java/activitystreamer/server/Control.java
+/git/TEST_DS/src/main/java/activitystreamer/server/Listener.java
+/git/TEST_DS/src/main/java/activitystreamer/client/TextFrame.java
+/git/TEST_DS/src/main/java/activitystreamer/client/ClientSkeleton.java
+/git/TEST_DS/src/main/java/activitystreamer/messages/AuthenticationFail.java
+/git/TEST_DS/src/main/java/activitystreamer/util/Settings.java
+/git/TEST_DS/src/main/java/activitystreamer/server/Connection.java
+/git/TEST_DS/src/main/java/TEST/App.java
