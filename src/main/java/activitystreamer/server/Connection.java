@@ -26,7 +26,8 @@ public class Connection extends Thread {
     private Socket socket;
     private boolean term = false;
 
-    Connection(Socket socket,boolean isServer) throws IOException {
+    //TODO I change it public I don't know if it's true
+    public Connection(Socket socket, boolean isServer) throws IOException {
         in = new DataInputStream(socket.getInputStream());
         out = new DataOutputStream(socket.getOutputStream());
         inreader = new BufferedReader(new InputStreamReader(in));
@@ -68,10 +69,13 @@ public class Connection extends Thread {
         try {
             String data;
 //            System.out.println(term);
+//            term = true;
             while (!term && (data = inreader.readLine()) != null) {
 //                System.out.printf("sdfasdf");
                 term = Control.getInstance().process(this, data);
+                System.out.println("----------"+term);
             }
+            System.out.println("----------2"+term);
             log.debug("connection closed to " + Settings.socketAddress(socket));
             Control.getInstance().connectionClosed(this);
             in.close();

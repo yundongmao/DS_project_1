@@ -1,5 +1,6 @@
 package activitystreamer.server;
 
+import java.awt.geom.NoninvertibleTransformException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import activitystreamer.messages.AuthenticateMsg;
 import activitystreamer.messages.AuthenticationFail;
 import activitystreamer.messages.InvalidMsg;
 import activitystreamer.util.Settings;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -33,7 +35,9 @@ public class Control extends Thread {
         // initialize the connections array
         connections = new ArrayList<Connection>();
         // start a listener
+
         try {
+//            return;
             listener = new Listener();
         } catch (IOException e1) {
             log.fatal("failed to startup a listening thread: " + e1);
@@ -47,6 +51,7 @@ public class Control extends Thread {
             log.fatal("failed to connect to target server");
             System.exit(-1);
         }
+
     }
 
     public void initiateConnection() {
@@ -93,7 +98,10 @@ public class Control extends Thread {
             con.closeCon();
             terminate = true;
             Control.listener.setTerm(true);
-        }else{
+            //TODO need to delete
+            System.out.println("asdfasfasdfs");
+            term = true;
+        } else{
             //TODO who to close the connection
             String invalidMsg = InvalidMsg.getInvalidMsgString();
             con.writeMsg(invalidMsg);
@@ -137,6 +145,8 @@ public class Control extends Thread {
         while (!term) {
             // do something with 5 second intervals in between
             try {
+                //TODO program haven't reached here, amazing.
+                System.out.println("------------------------");
                 Thread.sleep(Settings.getActivityInterval());
             } catch (InterruptedException e) {
                 log.info("received an interrupt, system is shutting down");

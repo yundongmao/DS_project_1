@@ -21,16 +21,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.border.Border;
 
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
-//import org.json.simple.JSONObject;
-//import org.json.simple.parser.JSONParser;
-//import org.json.simple.parser.ParseException;
-//
-//import com.google.gson.Gson;
-//import com.google.gson.GsonBuilder;
-//import com.google.gson.JsonElement;
-//import com.google.gson.JsonParser;
 
 @SuppressWarnings("serial")
 public class TextFrame extends JFrame implements ActionListener {
