@@ -17,7 +17,13 @@ public class InvalidMsg {
         jsonObject.put("info",info);
         return jsonObject;
     }
-    public static String getInvalidMsgString(){
+    public static JSONObject getInvalidMsgJSONObject(String info){
+        return getInvalidMsgJSONObject(command,info);
+    }
+    public static String getInvalidMsg(String info){
+        return getInvalidMsgJSONObject(command,info).toJSONString();
+    }
+    public static String getInvalidMsg(){
         return getInvalidMsgJSONObject(command,info).toJSONString();
     }
 }

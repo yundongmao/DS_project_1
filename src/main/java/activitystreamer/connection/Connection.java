@@ -1,4 +1,4 @@
-package activitystreamer.server;
+package activitystreamer.connection;
 
 
 import java.io.BufferedReader;
@@ -10,6 +10,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 
+import activitystreamer.client.ClientSkeleton;
+import activitystreamer.server.Control;
 import activitystreamer.util.Settings;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -72,8 +74,12 @@ public class Connection extends Thread {
 //            term = true;
             while (!term && (data = inreader.readLine()) != null) {
 //                System.out.printf("sdfasdf");
-                term = Control.getInstance().process(this, data);
-                System.out.println("----------"+term);
+                if (isServer){
+                    term = Control.getInstance().process(this, data);
+                }else{
+                    term = ClientSkeleton.getInstance().process(this,data);
+                }
+
             }
             System.out.println("----------2"+term);
             log.debug("connection closed to " + Settings.socketAddress(socket));
@@ -92,5 +98,8 @@ public class Connection extends Thread {
 
     public boolean isOpen() {
         return open;
+    }
+    public boolean isServer(){
+        return isServer;
     }
 }

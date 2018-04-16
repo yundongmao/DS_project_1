@@ -3,7 +3,7 @@ package activitystreamer.messages;
 import activitystreamer.util.Settings;
 import com.alibaba.fastjson.JSONObject;
 
-public class AuthenticationFail {
+public class AuthenticationMsg {
     private final static String command = "AUTHENTICATION_FAIL";
     private String info = "";
     public JSONObject toJSONObject(){
