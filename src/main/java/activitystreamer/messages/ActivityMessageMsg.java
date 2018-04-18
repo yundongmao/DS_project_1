@@ -2,14 +2,15 @@ package activitystreamer.messages;
 
 import com.alibaba.fastjson.JSONObject;
 
-public class LockRequestMsg {
-    private final static String command = "LOCK_REQUEST";
+public class ActivityMessageMsg {
+    private final static String command = "ACTIVITY_MESSAGE";
 
-    public static String getLockRequestMsg(String username, String secret) {
+    public static String getActivityMessageMsg(String username, String secret, String activity) {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("command", command);
         jsonObject.put("username", username);
         jsonObject.put("secret", secret);
+        jsonObject.put("activity", activity);
         return jsonObject.toJSONString();
     }
 }

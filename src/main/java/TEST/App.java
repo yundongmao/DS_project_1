@@ -12,5 +12,9 @@ public class App {
         jsonObject.put("name","mao");
         System.out.println(jsonObject.toJSONString());
         System.out.println("Hello World!");
+        System.out.println(jsonObject.getString("asdfljalksdfjklasdfjklsadf"));
+        if(true && 1/0>0){
+
+        }
     }
 }

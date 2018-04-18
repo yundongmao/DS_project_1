@@ -27,19 +27,18 @@ public class Listener extends Thread {
         while (!term) {
             Socket clientSocket;
             try {
-                System.out.println("---------------");
+//                System.out.println("---------------");
                 clientSocket = serverSocket.accept();
                 //TODO
                 boolean isServer = true;
-                Control.getInstance().incomingConnection(clientSocket,isServer);
+                Control.getInstance().incomingConnection(clientSocket, isServer);
                 //TODO
-                System.out.println("asdfasfdasdfd");
-                term = true;
             } catch (IOException e) {
                 log.info("received exception, shutting down");
                 term = true;
             }
         }
+//        System.out.println("Listener lallalalala");
     }
 
     public void setTerm(boolean term) {

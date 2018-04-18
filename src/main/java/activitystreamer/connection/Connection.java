@@ -55,14 +55,15 @@ public class Connection extends Thread {
     public void closeCon() {
         if (open) {
             log.info("closing connection " + Settings.socketAddress(socket));
-            try {
-                term = true;
-                inreader.close();
-                out.close();
-            } catch (IOException e) {
-                // already closed?
-                log.error("received exception closing the connection " + Settings.socketAddress(socket) + ": " + e);
-            }
+//            try {
+            term = true;
+//                inreader.close();
+//                out.close();
+//                open = false;
+//            } catch (IOException e) {
+//                // already closed?
+//                log.error("received exception closing the connection " + Settings.socketAddress(socket) + ": " + e);
+//            }
         }
     }
 
@@ -74,20 +75,33 @@ public class Connection extends Thread {
 //            term = true;
             while (!term && (data = inreader.readLine()) != null) {
 //                System.out.printf("sdfasdf");
-                if (Settings.isServer()){
-                    term = Control.getInstance().process(this, data);
-                }else{
-                    term = ClientSkeleton.getInstance().process(this,data);
-                }
 
+                if (Settings.isServer()) {
+                    term = Control.getInstance().process(this, data);
+                } else {
+                    term = ClientSkeleton.getInstance().process(this, data);
+                    System.out.println("-----------" + term);
+                }
             }
-            System.out.println("----------2"+term);
+            System.out.println("+++++++++++++" + term);
+
             log.debug("connection closed to " + Settings.socketAddress(socket));
-            Control.getInstance().connectionClosed(this);
-            in.close();
+            if (Settings.isServer()) {
+                Control.getInstance().connectionClosed(this);
+                in.close();
+            } else {
+//                socket.close();
+                System.out.println("close connection");
+//                ClientSkeleton.getInstance().disconnect();
+                in.close();
+            }
         } catch (IOException e) {
             log.error("connection " + Settings.socketAddress(socket) + " closed with exception: " + e);
-            Control.getInstance().connectionClosed(this);
+            if (Settings.isServer()) {
+                Control.getInstance().connectionClosed(this);
+            } else {
+                ClientSkeleton.getInstance().disconnect();
+            }
         }
         open = false;
     }
@@ -99,7 +113,8 @@ public class Connection extends Thread {
     public boolean isOpen() {
         return open;
     }
-    public boolean isServer(){
+
+    public boolean isServer() {
         return isServer;
     }
 }

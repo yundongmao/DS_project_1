@@ -1,24 +1,19 @@
 package activitystreamer.client;
 
+import activitystreamer.Client;
+import activitystreamer.messages.LoginFailedMsg;
+import activitystreamer.messages.LoginMsg;
+import activitystreamer.util.Settings;
+import activitystreamer.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.GridLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.ParseException;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.*;
 import javax.swing.border.Border;
 
 
@@ -26,46 +21,116 @@ import javax.swing.border.Border;
 public class TextFrame extends JFrame implements ActionListener {
     private static final Logger log = LogManager.getLogger(TextFrame.class);
     private JTextArea inputText;
+    private JTextField usernameRegText;
+    private JTextField secretRegText;
+    private JTextField remoteHostText;
+    private JTextField remotePortText;
+    private JTextField usernameLoginText;
+    private JTextField secretLoginText;
+
     private JTextArea outputText;
     private JButton sendButton;
     private JButton disconnectButton;
+    private JButton registerButton;
+    private JButton loginButton;
 //	private JSONParser parser = new JSONParser();
 
     public TextFrame() {
         setTitle("ActivityStreamer Text I/O");
+        //total
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new GridLayout(1, 2));
-        JPanel inputPanel = new JPanel();
-        JPanel outputPanel = new JPanel();
-        inputPanel.setLayout(new BorderLayout());
-        outputPanel.setLayout(new BorderLayout());
-        Border lineBorder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.lightGray), "JSON input, to send to server");
-        inputPanel.setBorder(lineBorder);
-        lineBorder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.lightGray), "JSON output, received from server");
-        outputPanel.setBorder(lineBorder);
-        outputPanel.setName("Text output");
 
+        //left
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new GridLayout(2, 1));
+
+        //left top
+        JPanel leftTopPanel = new JPanel();
+        leftTopPanel.setLayout(new GridLayout(2, 1));
+
+        //left top top
+        JPanel loginPanel = new JPanel();
+        loginPanel.setLayout(new FlowLayout(0));
+//        loginPanel.setSize(640,200);
+        remoteHostText = new JTextField(16);
+        remotePortText = new JTextField(16);
+        usernameLoginText = new JTextField(16);
+        secretLoginText = new JTextField(16);
+        JLabel remoteHostJL = new JLabel("remote host");
+        JLabel remotePortJL = new JLabel("remote port");
+        JLabel usernameLoginJL = new JLabel("username");
+        JLabel secretLoginJL = new JLabel("secret");
+        loginButton = new JButton("login");
+        loginButton.addActionListener(this);
+        Border lineBorder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.lightGray), "login");
+        loginPanel.setBorder(lineBorder);
+        loginPanel.add(remoteHostJL);
+        loginPanel.add(remoteHostText);
+        loginPanel.add(remotePortJL);
+        loginPanel.add(remotePortText);
+        loginPanel.add(usernameLoginJL);
+        loginPanel.add(usernameLoginText);
+        loginPanel.add(secretLoginJL);
+        loginPanel.add(secretLoginText);
+        loginPanel.add(loginButton);
+
+
+        //left mid
+        JPanel registerPanel = new JPanel();
+        registerPanel.setLayout(new FlowLayout(0));
+        usernameRegText = new JTextField(14);
+        secretRegText = new JTextField(14);
+        JLabel usernameLabel = new JLabel("username");
+        JLabel secretLabel = new JLabel("secret");
+        lineBorder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.lightGray), "register");
+        registerPanel.setBorder(lineBorder);
+        registerButton = new JButton("Register");
+        registerButton.addActionListener(this);
+
+        registerPanel.add(usernameLabel);
+        registerPanel.add(usernameRegText);
+        registerPanel.add(secretLabel);
+        registerPanel.add(secretRegText);
+        registerPanel.add(registerButton);
+
+
+        //left bottom
+        JPanel leftInputAreaPanel = new JPanel();
+        leftInputAreaPanel.setLayout(new BorderLayout());
+        lineBorder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.lightGray), "message send to server");
+        leftInputAreaPanel.setBorder(lineBorder);
         inputText = new JTextArea();
         JScrollPane scrollPane = new JScrollPane(inputText);
-        inputPanel.add(scrollPane, BorderLayout.CENTER);
-
+        leftInputAreaPanel.add(scrollPane, BorderLayout.CENTER);
         JPanel buttonGroup = new JPanel();
         sendButton = new JButton("Send");
         disconnectButton = new JButton("Disconnect");
         buttonGroup.add(sendButton);
         buttonGroup.add(disconnectButton);
-        inputPanel.add(buttonGroup, BorderLayout.SOUTH);
+        leftInputAreaPanel.add(buttonGroup, BorderLayout.SOUTH);
         sendButton.addActionListener(this);
         disconnectButton.addActionListener(this);
 
-
+        //right
+        JPanel outputPanel = new JPanel();
+        outputPanel.setLayout(new BorderLayout());
+        lineBorder = BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.lightGray), "JSON output, received from server");
+        outputPanel.setBorder(lineBorder);
+        outputPanel.setName("Text output");
         outputText = new JTextArea();
         scrollPane = new JScrollPane(outputText);
         outputPanel.add(scrollPane, BorderLayout.CENTER);
 
-        mainPanel.add(inputPanel);
+
+        leftTopPanel.add(loginPanel);
+        leftTopPanel.add(registerPanel);
+        leftPanel.add(leftTopPanel);
+        leftPanel.add(leftInputAreaPanel);
+        mainPanel.add(leftPanel);
         mainPanel.add(outputPanel);
         add(mainPanel);
+
 
         setLocationRelativeTo(null);
         setSize(1280, 768);
@@ -74,29 +139,84 @@ public class TextFrame extends JFrame implements ActionListener {
     }
 
     public void setOutputText(final JSONObject obj) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+//        Gson gson = new GsonBuilder().setPrettyPrinting().create();
 //		JsonParser jp = new JsonParser();
 //		JsonElement je = jp.parse(obj.toJSONString());
-        String prettyJsonString = gson.toJson(obj.toJSONString());
-        outputText.setText(prettyJsonString);
+//        String prettyJsonString = gson.toJson(obj.toJSONString());
+        outputText.setText(obj.toJSONString());
         outputText.revalidate();
-        outputText.repaint();
+//        outputText.repaint();
     }
+
+    public void setOutputText(final String text) {
+//        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+//		JsonParser jp = new JsonParser();
+//		JsonElement je = jp.parse(obj.toJSONString());
+//        String prettyJsonString = gson.toJson(obj.toJSONString());
+        outputText.setText(text);
+        outputText.revalidate();
+//        outputText.repaint();
+    }
+
+    public void setNoLogin() {
+        loginButton.setEnabled(false);
+        remoteHostText.setEnabled(false);
+        remotePortText.setEnabled(false);
+        usernameLoginText.setEnabled(false);
+        secretLoginText.setEnabled(false);
+    }
+
+    public void setLogin() {
+        loginButton.setEnabled(true);
+        remoteHostText.setEnabled(true);
+        remotePortText.setEnabled(true);
+        usernameLoginText.setEnabled(true);
+        secretLoginText.setEnabled(true);
+    }
+
 
     //	@Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == sendButton) {
-            String msg = inputText.getText().trim().replaceAll("\r", "").replaceAll("\n", "").replaceAll("\t", "");
-            JSONObject obj;
-            try {
-                obj = JSONObject.parseObject(msg);
-                ClientSkeleton.getInstance().sendActivityObject(obj);
-            } catch (Exception exception) {
-                log.error("invalid JSON object entered into input text field, data not sent");
-            }
+            String msg = inputText.getText();
+            ClientSkeleton.getInstance().activetyMessage(msg);
 
+//            String msg = inputText.getText().trim().replaceAll("\r", "").replaceAll("\n", "").replaceAll("\t", "");
+//            JSONObject obj;
+//            try {
+//                obj = JSONObject.parseObject(msg);
+//                ClientSkeleton.getInstance().sendActivityObject(obj);
+//            } catch (Exception exception) {
+//                log.error("invalid JSON object entered into input text field, data not sent");
+//            }
         } else if (e.getSource() == disconnectButton) {
             ClientSkeleton.getInstance().disconnect();
+            setLogin();
+        } else if (e.getSource() == registerButton) {
+            ClientSkeleton.getInstance().register(usernameRegText.getText(), secretRegText.getText());
+        } else if (e.getSource() == loginButton) {
+            String username = usernameLoginText.getText();
+            String secret = secretLoginText.getText();
+            String remoteHost = remoteHostText.getText();
+            String portStr = remotePortText.getText();
+            if (StringUtils.isNullorEmpty(username) || StringUtils.isNullorEmpty(secret) || StringUtils.isNullorEmpty(remoteHost) || StringUtils.isNullorEmpty(portStr)) {
+                this.setOutputText("user or secret or remote host or port can't be null");
+            }
+            int port = 8888;
+            try {
+                port = Integer.valueOf(portStr);
+            } catch (Exception pe) {
+                this.setOutputText("invalid port");
+                log.info("invalid port");
+                return;
+            }
+
+            Settings.setRemoteHostname(remoteHost);
+            Settings.setRemotePort(port);
+            Settings.setUsername(username);
+            Settings.setSecret(secret);
+            ClientSkeleton.getInstance().login();
+
         }
     }
 }

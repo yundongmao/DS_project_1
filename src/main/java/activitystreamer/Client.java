@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 
 public class Client {
 
-    private static final Logger log = LogManager.getLogger(Server.class);
+    private static final Logger log = LogManager.getLogger(Client.class);
 
     private static void help(Options options) {
         String header = "An ActivityStream Client for Unimelb COMP90015\n\n";
@@ -68,6 +68,8 @@ public class Client {
 
         if (cmd.hasOption("u")) {
             Settings.setUsername(cmd.getOptionValue("u"));
+        } else {
+            Settings.setUsername("anonymous");
         }
 
         Settings.setIsServer(false);
