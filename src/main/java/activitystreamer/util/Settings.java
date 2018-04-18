@@ -18,9 +18,19 @@ public class Settings {
 	private static String localHostname = "localhost";
 	private static String remoteHostname = null;
 	private static int remotePort = 3780;
-	private static int activityInterval = 1000; // milliseconds
+	private static int activityInterval = 5000; // milliseconds
 	private static String secret = null;
 	private static String username = "anonymous";
+	private static boolean isServer = true;
+	public static boolean isServer() {
+		return isServer;
+	}
+
+	public static void setIsServer(boolean isServer) {
+		Settings.isServer = isServer;
+	}
+
+
 
 	
 	public static int getLocalPort() {

@@ -25,8 +25,7 @@ public class Control extends Thread {
     private static Map<String,Integer> lockRequestWaitCount = new HashMap<String, Integer>();
     private static Map<String,Connection> lockRequestParentMap = new HashMap<String, Connection>();
     private static Map<String,Connection> registerParentMap = new HashMap<String, Connection>();
-
-
+    private static Map<String,JSONObject> knownServerMap = new HashMap<String, JSONObject>();
 
 
 
@@ -60,6 +59,7 @@ public class Control extends Thread {
             log.fatal("failed to connect to target server");
             System.exit(-1);
         }
+        start();
 
     }
 
@@ -98,7 +98,7 @@ public class Control extends Thread {
                 String authFailMsg = AuthenticationMsg.getAuthFailString("the supplied secret is incorrect: " + secret);
                 con.writeMsg(authFailMsg);
             } else {
-                log.info("server register success");
+                log.info("server authenticate success");
             }
         } else if ("INVALID_MESSAGE".equals(command)) {
             terminate = false;
@@ -111,6 +111,9 @@ public class Control extends Thread {
             System.out.println("asdfasfasdfs");
             term = true;
         } else if ("LOGIN".equals(command)) {
+            // change connection isServer
+            serverConnections.remove(con);
+            clientConnections.add(con);
             for (Connection con2 : serverConnections) {
 
             }
@@ -126,6 +129,19 @@ public class Control extends Thread {
 
         } else if ("SERVER_ANNOUNCE".equals(command)) {
 
+            String id = jsonObject.getString("id");
+            int load = jsonObject.getInteger("load");
+            String hostname = jsonObject.getString("hostname");
+            int port = jsonObject.getInteger("port");
+            knownServerMap.put(id,jsonObject);
+            System.out.println(knownServerMap);
+            for (Connection connection : serverConnections){
+                if (con == connection){
+                    continue;
+                }
+                connection.writeMsg(ServerAnnounceMsg.getServerAnnounceMsg(id,load,hostname,port));
+            }
+            terminate = false;
         } else if ("ACTIVITY_BROADCAST".equals(command)) {
 
         } else if ("REGISTER".equals(command)) {
@@ -288,18 +304,22 @@ public class Control extends Thread {
         log.info("using activity interval of " + Settings.getActivityInterval() + " milliseconds");
         while (!term) {
             // do something with 5 second intervals in between
+            log.info("server announce");
+            for(Connection connection : serverConnections){
+                connection.writeMsg(ServerAnnounceMsg
+                        .getServerAnnounceMsg(Settings.getLocalHostname()+Settings.getLocalPort()
+                                ,clientConnections.size(),Settings.getLocalHostname(),Settings.getLocalPort()));
+            }
             try {
-                //TODO program haven't reached here, amazing.
-                System.out.println("------------------------");
                 Thread.sleep(Settings.getActivityInterval());
             } catch (InterruptedException e) {
                 log.info("received an interrupt, system is shutting down");
                 break;
             }
-            if (!term) {
-                log.debug("doing activity");
-                term = doActivity();
-            }
+//            if (!term) {
+//                log.debug("doing activity");
+//                term = doActivity();
+//            }
 
         }
         log.info("closing " + serverConnections.size() + " server connections");

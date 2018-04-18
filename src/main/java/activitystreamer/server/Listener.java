@@ -30,7 +30,7 @@ public class Listener extends Thread {
                 System.out.println("---------------");
                 clientSocket = serverSocket.accept();
                 //TODO
-                boolean isServer = false;
+                boolean isServer = true;
                 Control.getInstance().incomingConnection(clientSocket,isServer);
                 //TODO
                 System.out.println("asdfasfdasdfd");

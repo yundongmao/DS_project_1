@@ -70,6 +70,8 @@ public class Client {
             Settings.setUsername(cmd.getOptionValue("u"));
         }
 
+        Settings.setIsServer(false);
+
 
         log.info("starting client");
 

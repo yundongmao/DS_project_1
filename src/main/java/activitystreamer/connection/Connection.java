@@ -74,7 +74,7 @@ public class Connection extends Thread {
 //            term = true;
             while (!term && (data = inreader.readLine()) != null) {
 //                System.out.printf("sdfasdf");
-                if (isServer){
+                if (Settings.isServer()){
                     term = Control.getInstance().process(this, data);
                 }else{
                     term = ClientSkeleton.getInstance().process(this,data);
