@@ -136,15 +136,20 @@ public class TextFrame extends JFrame implements ActionListener {
         setSize(1280, 768);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
+
+        remoteHostText.setText(Settings.getRemoteHostname());
+        remotePortText.setText(String.valueOf( Settings.getRemotePort()));
     }
+
 
     public void setOutputText(final JSONObject obj) {
 //        Gson gson = new GsonBuilder().setPrettyPrinting().create();
 //		JsonParser jp = new JsonParser();
 //		JsonElement je = jp.parse(obj.toJSONString());
 //        String prettyJsonString = gson.toJson(obj.toJSONString());
-        outputText.setText(obj.toJSONString());
-        outputText.revalidate();
+//        outputText.setText(obj.toJSONString());
+        outputText.append(obj.toJSONString()+"\n");
+//        outputText.revalidate();
 //        outputText.repaint();
     }
 
@@ -175,7 +180,20 @@ public class TextFrame extends JFrame implements ActionListener {
     }
 
 
-    //	@Override
+    public void setRegister() {
+        registerButton.setEnabled(true);
+        usernameRegText.setEnabled(true);
+        secretRegText.setEnabled(true);
+    }
+
+    public void setNoRegister() {
+        registerButton.setEnabled(false);
+        usernameRegText.setEnabled(false);
+        secretRegText.setEnabled(false);
+    }
+
+
+        //	@Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == sendButton) {
             String msg = inputText.getText();
@@ -199,9 +217,11 @@ public class TextFrame extends JFrame implements ActionListener {
             String secret = secretLoginText.getText();
             String remoteHost = remoteHostText.getText();
             String portStr = remotePortText.getText();
-            if (StringUtils.isNullorEmpty(username) || StringUtils.isNullorEmpty(secret) || StringUtils.isNullorEmpty(remoteHost) || StringUtils.isNullorEmpty(portStr)) {
-                this.setOutputText("user or secret or remote host or port can't be null");
+            if (StringUtils.isNullorEmpty(remoteHost) || StringUtils.isNullorEmpty(portStr)) {
+                this.setOutputText("remote host or port is null");
+                return;
             }
+
             int port = 8888;
             try {
                 port = Integer.valueOf(portStr);
@@ -213,7 +233,17 @@ public class TextFrame extends JFrame implements ActionListener {
 
             Settings.setRemoteHostname(remoteHost);
             Settings.setRemotePort(port);
-            Settings.setUsername(username);
+            if(StringUtils.isNullorEmpty(username)){
+                Settings.setUsername("anonymous");
+            }else{
+                Settings.setUsername(username);
+                if(StringUtils.isNullorEmpty(secret)){
+                    this.setOutputText("secret is null");
+                    return;
+                }
+            }
+
+
             Settings.setSecret(secret);
             ClientSkeleton.getInstance().login();
 

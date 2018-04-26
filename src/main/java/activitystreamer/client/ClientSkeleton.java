@@ -10,9 +10,6 @@ import activitystreamer.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-//import org.json.simple.JSONObject;
-//import org.json.simple.parser.JSONParser;
-//import org.json.simple.parser.ParseException;
 
 import activitystreamer.util.Settings;
 
@@ -138,8 +135,7 @@ public class ClientSkeleton extends Thread {
             textFrame.setOutputText(jsonObject);
             log.info("REDIRECT :" + jsonObject.toJSONString());
             con.closeCon();
-
-            System.out.println("asdfasdfasfasfasdf");
+//            System.out.println("asdfasdfasfasfasdf");
             String hostname = jsonObject.getString("hostname");
             int port = jsonObject.getInteger("port");
             Settings.setRemoteHostname(hostname);
@@ -147,7 +143,11 @@ public class ClientSkeleton extends Thread {
             login();
             return false;
         } else if ("LOGIN_FAILED".equals(command)) {
-            System.out.println("LOGIN_FAILED");
+            log.info("LOGIN_FAILED : msg : "+jsonObject);
+//            System.out.println("LOGIN_FAILED");
+            textFrame.setLogin();
+            textFrame.setNoRegister();
+            textFrame.setOutputText(jsonObject);
             return true;
         } else if ("ACTIVITY_BROADCAST".equals(command)) {
             log.info("ACTIVITY_BROADCAST " + jsonObject.toJSONString());
@@ -161,19 +161,17 @@ public class ClientSkeleton extends Thread {
         } else if ("REGISTER_SUCCESS".equals(command)) {
             textFrame.setOutputText(jsonObject);
             return false;
-        } else if ("AUTHTENTICATION_FAIL".equals(command)) {
+        } else if ("AUTHENTICATION_FAIL".equals(command)) {
             log.info("AUTHTENTICATION_FAIL for wrong username and secret ");
+            textFrame.setOutputText(jsonObject);
             return true;
-        } else if ("LOCK_DENIED".equals(command)) {
-
-        } else {
+        }  else {
             log.info(InvalidMsg.getInvalidMsg());
             //TODO who to close the connection
             String invalidMsg = InvalidMsg.getInvalidMsg();
             con.writeMsg(invalidMsg);
             return true;
         }
-        return false;
     }
 
     public void run() {

@@ -20,9 +20,11 @@ public class Control extends Thread {
     private static ArrayList<Connection> serverConnections;
     private static boolean term = false;
     private static Listener listener;
-    private static Map<String, Integer> lockRequestWaitCount = new HashMap<String, Integer>();
-    private static Map<String, Connection> lockRequestParentMap = new HashMap<String, Connection>();
     private static Map<String, Connection> registerClientConnectionMap = new HashMap<String, Connection>();
+    private static Map<String, Integer> registerAllowedGetCount = new HashMap<String, Integer>();
+    private static Map<String, Integer> registerAllowedTargetCount = new HashMap<String, Integer>();
+    private static Map<Connection, User> loggedInUser = new HashMap<Connection, User>();
+
     private static Map<String, JSONObject> knownServerMap = new HashMap<String, JSONObject>();
     private static Map<String, String> usernameAndSecretMap = new HashMap<String, String>();
 
@@ -99,7 +101,7 @@ public class Control extends Thread {
                 return false;
             }
         } else if ("INVALID_MESSAGE".equals(command)) {
-            log.info("get " + InvalidMsg.getInvalidMsg());
+            log.info("get invalid message : " + InvalidMsg.getInvalidMsg());
             return true;
         } else if ("AUTHENTICATION_FAIL".equals(command)) {
             //TODO resend authticaiton message?
@@ -107,7 +109,7 @@ public class Control extends Thread {
             System.out.println("AUTHENTICATION_FAIL");
             Control.listener.setTerm(true);
             //TODO need to delete
-            System.out.println("asdfasfasdfs");
+//            System.out.println("asdfasfasdfs");
             term = true;
             return true;
         } else if ("LOGIN".equals(command)) {
@@ -139,6 +141,7 @@ public class Control extends Thread {
                             return true;
                         }
                     }
+                    loggedInUser.put(con, new User(username, secret));
                     return false;
                 } else {
                     log.info("login fail " + User.getUserString(username, secret));
@@ -157,45 +160,32 @@ public class Control extends Thread {
             String username = jsonObject.getString("username");
             String secret = jsonObject.getString("secret");
             String activity = jsonObject.getString("activity");
-            if ("anonymous".equals(username)) {
-                con.writeMsg(LoginSuccessMsg.getLoginSuccessMsg(username));
-                return false;
-            }
-            if (StringUtils.isNullorEmpty(secret) || StringUtils.isNullorEmpty(username)) {
-                con.writeMsg(LoginFailedMsg.getLoginFailedMsg());
-                return true;
-            }
-
-            if (usernameAndSecretMap.containsKey(username)) {
-                if (usernameAndSecretMap.get(username).toString().equals(secret)) {
-                    log.info("Authenticate success in when receive ACTIVITY_MESSAGE" + User.getUserString(username, secret));
-                    for (Connection connection : serverConnections) {
-                        connection.writeMsg(ActivityBroadcastMsg.getActivityBroadcastMsg(activity));
-                    }
-
-                    for (Connection connection : clientConnections) {
-                        if (connection == con) {
-                            continue;
-                        }
-                        connection.writeMsg(ActivityBroadcastMsg.getActivityBroadcastMsg(activity));
-                    }
-                    return false;
-                } else {
-                    log.info("Authenticate fail in when receive ACTIVITY_MESSAGE" + User.getUserString(username, secret));
+            if (!"anonymous".equals(username)) {
+                if (StringUtils.isNullorEmpty(secret) || StringUtils.isNullorEmpty(username)) {
+                    con.writeMsg(AuthenticationFailMsg.getAuthenticationFailMsg("username or secret is empty"));
+                    return true;
+                }
+                if (!loggedInUser.get(con).getUsername().equals(username) || !loggedInUser.get(con).getSecret().equals(secret)) {
+                    log.info("Authenticate fail in when receive ACTIVITY_MESSAGE" + User.getUserString(username, secret) + " ----- the logged in user is :" + loggedInUser.get(con).toJSONString());
                     con.writeMsg(AuthenticationFailMsg
                             .getAuthenticationFailMsg("Authenticate fail in when receive ACTIVITY_MESSAGE"
                                     + User.getUserString(username, secret)));
-                    //TODO
                     return true;
                 }
-            } else {
-                log.info("Authenticate fail in when receive ACTIVITY_MESSAGE" + User.getUserString(username, secret));
-                con.writeMsg(AuthenticationFailMsg
-                        .getAuthenticationFailMsg("Authenticate fail in when receive ACTIVITY_MESSAGE"
-                                + User.getUserString(username, secret)));
-                //TODO
-                return true;
             }
+
+            log.info("Authenticate success in when receive ACTIVITY_MESSAGE" + User.getUserString(username, secret));
+            for (Connection connection : serverConnections) {
+                connection.writeMsg(ActivityBroadcastMsg.getActivityBroadcastMsg(activity));
+            }
+
+            for (Connection connection : clientConnections) {
+                if (connection == con) {
+                    continue;
+                }
+                connection.writeMsg(ActivityBroadcastMsg.getActivityBroadcastMsg(activity));
+            }
+            return false;
         } else if ("SERVER_ANNOUNCE".equals(command)) {
 
             String id = jsonObject.getString("id");
@@ -250,7 +240,9 @@ public class Control extends Thread {
                 usernameAndSecretMap.put(username, secret);
                 return false;
             }
-            lockRequestWaitCount.put(User.getUserString(username, secret), 0);
+//            lockRequestWaitCount.put(User.getUserString(username, secret), 0);
+            registerAllowedGetCount.put(User.getUserString(username, secret), 0);
+            registerAllowedTargetCount.put(User.getUserString(username, secret), knownServerMap.size());
             registerClientConnectionMap.put(User.getUserString(username, secret), con);
             for (Connection connection : serverConnections) {
                 connection.writeMsg(LockRequestMsg.getLockRequestMsg(username, secret));
@@ -274,13 +266,20 @@ public class Control extends Thread {
                 return false;
             } else {
                 log.info("LOCK_REQUEST success, and return lock_allowed msg and broadcast lock_request msg");
+
                 usernameAndSecretMap.put(username, secret);
-                if (serverConnections.size() == 1) {
-                    con.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
-                    return false;
-                }
-                lockRequestWaitCount.put(User.getUserString(username, secret), 0);
-                lockRequestParentMap.put(User.getUserString(username, secret), con);
+                con.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
+
+//                for (Connection connection : serverConnections) {
+//                    if (con == connection) {
+//                        continue;
+//                    }
+//                    connection.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
+//                }
+//                if (serverConnections.size() == 1) {
+//                    con.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
+//                    return false;
+//                }
 
                 for (Connection connection : serverConnections) {
                     if (con == connection) {
@@ -301,26 +300,27 @@ public class Control extends Thread {
                 //TODO terminal state
                 return true;
             }
-            if (!lockRequestWaitCount.containsKey(User.getUserString(username, secret))) {
-                log.error("system bug");
-                return false;
+
+
+            for (Connection connection : serverConnections) {
+                if (connection == con) {
+                    continue;
+                }
+                connection.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
             }
 
-            int count = lockRequestWaitCount.get(User.getUserString(username, secret));
-            count++;
-            if (count >= serverConnections.size()) {
-                String user = User.getUserString(username, secret);
-                if (registerClientConnectionMap.containsKey(user)) {
+            if (registerClientConnectionMap.containsKey(User.getUserString(username, secret))) {
+                int count = registerAllowedGetCount.get(User.getUserString(username, secret));
+                registerAllowedGetCount.put(User.getUserString(username, secret), ++count);
+                if (count >= registerAllowedTargetCount.get(User.getUserString(username, secret))) {
+                    String user = User.getUserString(username, secret);
                     log.info("this server can return register success");
                     registerClientConnectionMap.get(user)
                             .writeMsg(RegisterSucessMsg.getRegisterSucessMsg(username));
                     usernameAndSecretMap.put(username, secret);
-                } else {
-                    log.info("this server can return lock_allowed");
-                    lockRequestParentMap.get(user)
-                            .writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
                 }
             }
+
             return false;
         } else if ("LOCK_DENIED".equals(command)) {
             String username = jsonObject.getString("username");
@@ -361,6 +361,7 @@ public class Control extends Thread {
         if (!term) {
             serverConnections.remove(con);
             clientConnections.remove(con);
+            loggedInUser.remove(con);
         }
     }
 
@@ -431,7 +432,6 @@ public class Control extends Thread {
     }
 
     public boolean sendAuthenticateMsg(AuthenticateMsg authenticateMsg) {
-
         return false;
     }
 

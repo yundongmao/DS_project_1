@@ -55,15 +55,16 @@ public class Connection extends Thread {
     public void closeCon() {
         if (open) {
             log.info("closing connection " + Settings.socketAddress(socket));
-//            try {
-            term = true;
+            try {
+                term = true;
+                in.close();
 //                inreader.close();
 //                out.close();
 //                open = false;
-//            } catch (IOException e) {
-//                // already closed?
-//                log.error("received exception closing the connection " + Settings.socketAddress(socket) + ": " + e);
-//            }
+            } catch (IOException e) {
+                // already closed?
+                log.error("received exception closing the connection " + Settings.socketAddress(socket) + ": " + e);
+            }
         }
     }
 
@@ -96,11 +97,11 @@ public class Connection extends Thread {
                 in.close();
             }
         } catch (IOException e) {
-            log.error("connection " + Settings.socketAddress(socket) + " closed with exception: " + e);
+            log.debug("connection " + Settings.socketAddress(socket) + " closed with exception: " + e);
             if (Settings.isServer()) {
                 Control.getInstance().connectionClosed(this);
             } else {
-                ClientSkeleton.getInstance().disconnect();
+                log.info("nothing happend");
             }
         }
         open = false;
