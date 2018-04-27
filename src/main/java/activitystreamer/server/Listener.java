@@ -23,28 +23,28 @@ public class Listener extends Thread {
     @Override
     public void run() {
         log.info("listening for new connections on " + portnum);
-//        term = true;
         while (!term) {
             Socket clientSocket;
             try {
-//                System.out.println("---------------");
                 clientSocket = serverSocket.accept();
-                //TODO
                 boolean isServer = true;
                 Control.getInstance().incomingConnection(clientSocket, isServer);
-                //TODO
             } catch (IOException e) {
                 log.info("received exception, shutting down");
                 term = true;
             }
         }
-//        System.out.println("Listener lallalalala");
+        System.exit(0);
     }
 
     public void setTerm(boolean term) {
         this.term = term;
-        log.info("close the listener because of the term signal");
-        if (term) interrupt();
+
+        if (term) {
+            log.info("close the listener because of the term signal");
+            interrupt();
+            System.exit(0);
+        }
     }
 
 

@@ -2,6 +2,7 @@ package activitystreamer.client;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Set;
 
 
 import activitystreamer.messages.*;
@@ -33,15 +34,15 @@ public class ClientSkeleton extends Thread {
         if (Settings.getRemoteHostname() != null) {
             try {
                 Socket socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-                System.out.println(socket);
                 //TODO
                 con = new Connection(socket, true);
                 String msg = LoginMsg.getLoginMsg(Settings.getUsername(), Settings.getSecret());
                 con.writeMsg(msg);
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":" + Settings.getRemotePort() + " :" + e);
-                //TODO
                 textFrame.setLogin();
+                textFrame.setRegister();
+                textFrame.setOutputText("please check the host and port");
 //                System.exit(-1);
             }
         }
@@ -49,33 +50,8 @@ public class ClientSkeleton extends Thread {
     }
 
     public ClientSkeleton() {
-        System.out.println("init-------");
         textFrame = new TextFrame();
         initiateConnection();
-    }
-
-
-    @SuppressWarnings("unchecked")
-    public void sendActivityObject(JSONObject activityObj) {
-        String command = activityObj.getString("command");
-        if ("REGISTER".equals(command)) {
-            String username = activityObj.getString("username");
-            String secret = activityObj.getString("secret");
-            if (StringUtils.isNullorEmpty(username) || StringUtils.isNullorEmpty(secret)) {
-                log.info("REGISTER fail caused by wrong params, json string: " + activityObj.toJSONString());
-                textFrame.setOutputText(InvalidMsg.getInvalidMsgJSONObject("REGISTER fail caused by wrong params"));
-                return;
-            }
-            //TODO
-            boolean tempRC = con.writeMsg(RegisterMsg.getRegisterMsg(username, secret));
-        } else if ("LOGIN".equals(command)) {
-
-        } else if ("LOGOUT".equals(command)) {
-
-        } else {
-            //TODO
-            System.out.println("a----------");
-        }
     }
 
     public void logout() {
@@ -85,7 +61,11 @@ public class ClientSkeleton extends Thread {
 
     public void disconnect() {
         con.closeCon();
-//        System.exit(0);
+    }
+
+    public void loginAfterSuccess(String username,String secret){
+        String msg = LoginMsg.getLoginMsg(username, secret);
+        con.writeMsg(msg);
     }
 
     public void login() {
@@ -104,18 +84,35 @@ public class ClientSkeleton extends Thread {
     }
 
     public void register(String username, String secret) {
-
+        Settings.setUsername(username);
+        Settings.setSecret(secret);
         if (StringUtils.isNullorEmpty(username) || StringUtils.isNullorEmpty(secret)) {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("wrong parameters", "username and secret can't be null");
             textFrame.setOutputText(jsonObject);
             return;
         }
-        String msg = RegisterMsg.getRegisterMsg(username, secret);
-        con.writeMsg(msg);
+
+        try {
+            Socket socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+            con = new Connection(socket, true);
+            String msg = RegisterMsg.getRegisterMsg(username, secret);
+            con.writeMsg(msg);
+            Thread.sleep(1000);
+            loginAfterSuccess(username,secret);
+        } catch (IOException e) {
+            log.error("failed to make connection to " + Settings.getRemoteHostname() + ":" + Settings.getRemotePort() + " :" + e);
+            //TODO
+            textFrame.setLogin();
+            textFrame.setOutputText("failed to make connection to " + Settings.getRemoteHostname() + ":" + Settings.getRemotePort() + " :" + e);
+//                System.exit(-1);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    public void activetyMessage(String activityMsg) {
+    public void activetyMessage(JSONObject activityMsg) {
         con.writeMsg(ActivityMessageMsg.getActivityMessageMsg(Settings.getUsername()
                 , Settings.getSecret(), activityMsg));
 
@@ -124,18 +121,20 @@ public class ClientSkeleton extends Thread {
     public synchronized boolean process(Connection con, String msg) {
         JSONObject jsonObject = JSONObject.parseObject(msg);
         String command = jsonObject.get("command").toString();
+        log.info(jsonObject);
         if ("INVALID_MESSAGE".equals(command)) {
+            textFrame.setRegister();
+            textFrame.setLogin();
+            textFrame.setOutputText(jsonObject);
             return true;
         } else if ("LOGIN_SUCCESS".equals(command)) {
-            log.info("LOGIN_SUCCESS :" + jsonObject.toJSONString());
             textFrame.setOutputText(jsonObject);
             textFrame.setNoLogin();
+            textFrame.setNoRegister();
             return false;
         } else if ("REDIRECT".equals(command)) {
             textFrame.setOutputText(jsonObject);
-            log.info("REDIRECT :" + jsonObject.toJSONString());
             con.closeCon();
-//            System.out.println("asdfasdfasfasfasdf");
             String hostname = jsonObject.getString("hostname");
             int port = jsonObject.getInteger("port");
             Settings.setRemoteHostname(hostname);
@@ -143,31 +142,24 @@ public class ClientSkeleton extends Thread {
             login();
             return false;
         } else if ("LOGIN_FAILED".equals(command)) {
-            log.info("LOGIN_FAILED : msg : "+jsonObject);
-//            System.out.println("LOGIN_FAILED");
             textFrame.setLogin();
-            textFrame.setNoRegister();
+            textFrame.setRegister();
             textFrame.setOutputText(jsonObject);
             return true;
         } else if ("ACTIVITY_BROADCAST".equals(command)) {
-            log.info("ACTIVITY_BROADCAST " + jsonObject.toJSONString());
             textFrame.setOutputText(jsonObject);
             return false;
         } else if ("REGISTER_FAILED".equals(command)) {
-//            System.out.println("REGISTER_FAILED");
-            log.info("REGISTER_FAILED");
             textFrame.setOutputText(jsonObject);
-            return false;
+            return true;
         } else if ("REGISTER_SUCCESS".equals(command)) {
             textFrame.setOutputText(jsonObject);
             return false;
         } else if ("AUTHENTICATION_FAIL".equals(command)) {
-            log.info("AUTHTENTICATION_FAIL for wrong username and secret ");
             textFrame.setOutputText(jsonObject);
             return true;
         }  else {
-            log.info(InvalidMsg.getInvalidMsg());
-            //TODO who to close the connection
+            textFrame.setOutputText(jsonObject);
             String invalidMsg = InvalidMsg.getInvalidMsg();
             con.writeMsg(invalidMsg);
             return true;

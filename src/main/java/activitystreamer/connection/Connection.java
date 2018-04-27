@@ -72,19 +72,14 @@ public class Connection extends Thread {
     public void run() {
         try {
             String data;
-//            System.out.println(term);
-//            term = true;
             while (!term && (data = inreader.readLine()) != null) {
-//                System.out.printf("sdfasdf");
 
                 if (Settings.isServer()) {
                     term = Control.getInstance().process(this, data);
                 } else {
                     term = ClientSkeleton.getInstance().process(this, data);
-                    System.out.println("-----------" + term);
                 }
             }
-            System.out.println("+++++++++++++" + term);
 
             log.debug("connection closed to " + Settings.socketAddress(socket));
             if (Settings.isServer()) {
@@ -92,7 +87,6 @@ public class Connection extends Thread {
                 in.close();
             } else {
 //                socket.close();
-                System.out.println("close connection");
 //                ClientSkeleton.getInstance().disconnect();
                 in.close();
             }

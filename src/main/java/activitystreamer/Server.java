@@ -31,7 +31,6 @@ public class Server {
 
     public static void main(String[] args) {
         log.info("reading command line options");
-//        System.out.printf("asfasdf");
         Options options = new Options();
         options.addOption("lp", true, "local port number");
         options.addOption("rp", true, "remote port number");
@@ -51,10 +50,8 @@ public class Server {
         }
 
         if (cmd.hasOption("lp")) {
-//            System.out.println("asdfsdfa");
             try {
                 int port = Integer.parseInt(cmd.getOptionValue("lp"));
-//                System.out.println(port);
                 Settings.setLocalPort(port);
             } catch (NumberFormatException e) {
                 log.info("-lp requires a port number, parsed: " + cmd.getOptionValue("lp"));
@@ -106,14 +103,12 @@ public class Server {
         final Control c = Control.getInstance();
         // the following shutdown hook doesn't really work, it doesn't give us enough time to
         // cleanup all of our connections before the jvm is terminated.
-//        System.out.println("asdfsafd");
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 c.setTerm(true);
                 c.interrupt();
             }
         });
-//        System.out.println("asdfsdfasf");
     }
 
 }

@@ -15,6 +15,7 @@ public class App {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("name","mao");
         System.out.println(jsonObject.toJSONString());
+        System.out.println("{\"name\":\"mao\"}");
         System.out.println("Hello World!");
         System.out.println(jsonObject.getString("asdfljalksdfjklasdfjklsadf"));
         Map<String,Integer> a = new HashMap<String, Integer>();

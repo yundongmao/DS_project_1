@@ -55,7 +55,6 @@ public class Control extends Thread {
         try {
             initiateConnection();
         } catch (Exception e1) {
-            System.out.printf("asdfasdf");
             log.fatal("failed to connect to target server");
             System.exit(-1);
         }
@@ -87,8 +86,8 @@ public class Control extends Thread {
     public synchronized boolean process(Connection con, String msg) {
         JSONObject jsonObject = JSONObject.parseObject(msg);
         String command = jsonObject.get("command").toString();
+        log.info(jsonObject.toJSONString());
         if ("AUTHENTICATE".equals(command)) {
-            //TODO if contains other information
             String secret = jsonObject.get("secret").toString();
             boolean success = AuthenticateMsg.auth(secret);
             if (!success) {
@@ -101,21 +100,18 @@ public class Control extends Thread {
                 return false;
             }
         } else if ("INVALID_MESSAGE".equals(command)) {
-            log.info("get invalid message : " + InvalidMsg.getInvalidMsg());
             return true;
         } else if ("AUTHENTICATION_FAIL".equals(command)) {
-            //TODO resend authticaiton message?
             con.closeCon();
-            System.out.println("AUTHENTICATION_FAIL");
             Control.listener.setTerm(true);
-            //TODO need to delete
-//            System.out.println("asdfasfasdfs");
             term = true;
             return true;
         } else if ("LOGIN".equals(command)) {
             // change connection isServer
             serverConnections.remove(con);
-            clientConnections.add(con);
+            if (!clientConnections.contains(con)) {
+                clientConnections.add(con);
+            }
             String username = jsonObject.getString("username");
             String secret = jsonObject.getString("secret");
             if ("anonymous".equals(username)) {
@@ -153,13 +149,11 @@ public class Control extends Thread {
                 return true;
             }
         } else if ("LOGOUT".equals(command)) {
-            log.info("get " + LogoutMsg.getLogoutMsg());
-            //just close the connnection
             return true;
         } else if ("ACTIVITY_MESSAGE".equals(command)) {
             String username = jsonObject.getString("username");
             String secret = jsonObject.getString("secret");
-            String activity = jsonObject.getString("activity");
+            JSONObject activity = jsonObject.getJSONObject("activity");
             if (!"anonymous".equals(username)) {
                 if (StringUtils.isNullorEmpty(secret) || StringUtils.isNullorEmpty(username)) {
                     con.writeMsg(AuthenticationFailMsg.getAuthenticationFailMsg("username or secret is empty"));
@@ -175,14 +169,12 @@ public class Control extends Thread {
             }
 
             log.info("Authenticate success in when receive ACTIVITY_MESSAGE" + User.getUserString(username, secret));
+            activity.put("authenticated_user", username);
             for (Connection connection : serverConnections) {
                 connection.writeMsg(ActivityBroadcastMsg.getActivityBroadcastMsg(activity));
             }
 
             for (Connection connection : clientConnections) {
-                if (connection == con) {
-                    continue;
-                }
                 connection.writeMsg(ActivityBroadcastMsg.getActivityBroadcastMsg(activity));
             }
             return false;
@@ -193,7 +185,6 @@ public class Control extends Thread {
             String hostname = jsonObject.getString("hostname");
             int port = jsonObject.getInteger("port");
             knownServerMap.put(id, jsonObject);
-            System.out.println(knownServerMap);
             for (Connection connection : serverConnections) {
                 if (con == connection) {
                     continue;
@@ -202,8 +193,8 @@ public class Control extends Thread {
             }
             return false;
         } else if ("ACTIVITY_BROADCAST".equals(command)) {
-            String activity = jsonObject.getString("activity");
-            if (StringUtils.isNullorEmpty(activity) || jsonObject.keySet().size() > 2) {
+            JSONObject activity = jsonObject.getJSONObject("activity");
+            if (StringUtils.isNullorEmpty(activity.toJSONString()) || jsonObject.keySet().size() > 2) {
                 log.info(InvalidMsg.getInvalidMsg());
                 con.writeMsg(InvalidMsg.getInvalidMsg());
                 return true;
@@ -221,6 +212,10 @@ public class Control extends Thread {
             return false;
 
         } else if ("REGISTER".equals(command)) {
+            serverConnections.remove(con);
+            if (!clientConnections.contains(con)) {
+                clientConnections.add(con);
+            }
             String username = jsonObject.getString("username");
             String secret = jsonObject.getString("secret");
             if (StringUtils.isNullorEmpty(username) || StringUtils.isNullorEmpty(secret)) {
@@ -240,7 +235,6 @@ public class Control extends Thread {
                 usernameAndSecretMap.put(username, secret);
                 return false;
             }
-//            lockRequestWaitCount.put(User.getUserString(username, secret), 0);
             registerAllowedGetCount.put(User.getUserString(username, secret), 0);
             registerAllowedTargetCount.put(User.getUserString(username, secret), knownServerMap.size());
             registerClientConnectionMap.put(User.getUserString(username, secret), con);
@@ -269,18 +263,6 @@ public class Control extends Thread {
 
                 usernameAndSecretMap.put(username, secret);
                 con.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
-
-//                for (Connection connection : serverConnections) {
-//                    if (con == connection) {
-//                        continue;
-//                    }
-//                    connection.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
-//                }
-//                if (serverConnections.size() == 1) {
-//                    con.writeMsg(LockAllowedMsg.getLockAllowedMsg(username, secret));
-//                    return false;
-//                }
-
                 for (Connection connection : serverConnections) {
                     if (con == connection) {
                         continue;
@@ -295,9 +277,7 @@ public class Control extends Thread {
             String secret = jsonObject.getString("secret");
             if (StringUtils.isNullorEmpty(username) || StringUtils.isNullorEmpty(secret)) {
                 con.writeMsg(InvalidMsg.getInvalidMsg());
-                //TODO if invalid message do I need to return lock_dinied
                 con.writeMsg(LockDeniedMsg.getLockDeniedMsg(username, secret));
-                //TODO terminal state
                 return true;
             }
 
@@ -333,21 +313,9 @@ public class Control extends Thread {
                 }
                 connection.writeMsg(LockDeniedMsg.getLockDeniedMsg(username, secret));
             }
-
-
-//            log.info("this server can return lock_allowed");
-//            String user = User.getUserString(username,secret);
-//            if(lockRequestParentMap.containsKey(user)){
-//                lockRequestParentMap.get(user)
-//                        .writeMsg(LockDeniedMsg.getLockDeniedMsg(username, secret));
-//            }else{
-//                registerClientConnectionMap.get(user)
-//                        .writeMsg(RegisterFailedMsg.getRegisterFailedMsg(username));
-//            }
             return false;
 
         } else {
-            //TODO who to close the connection
             String invalidMsg = InvalidMsg.getInvalidMsg();
             con.writeMsg(invalidMsg);
             return true;
@@ -400,7 +368,7 @@ public class Control extends Thread {
         log.info("using activity interval of " + Settings.getActivityInterval() + " milliseconds");
         while (!term) {
             // do something with 5 second intervals in between
-            log.info("server announce");
+//            log.info("server announce");
             for (Connection connection : serverConnections) {
                 connection.writeMsg(ServerAnnounceMsg
                         .getServerAnnounceMsg(Settings.getLocalHostname() + Settings.getLocalPort()
@@ -427,7 +395,6 @@ public class Control extends Thread {
         for (Connection connection : clientConnections) {
             connection.closeCon();
         }
-        System.out.println("listen");
         listener.setTerm(true);
     }
 
