@@ -115,7 +115,19 @@ public class Control extends Thread {
             String username = jsonObject.getString("username");
             String secret = jsonObject.getString("secret");
             if ("anonymous".equals(username)) {
+                log.info("login success " + User.getUserString(username, secret));
                 con.writeMsg(LoginSuccessMsg.getLoginSuccessMsg(username));
+                for (String id : knownServerMap.keySet()) {
+                    System.out.println(clientConnections.size() );
+                    if (clientConnections.size() >= knownServerMap.get(id).getInteger("load") + 2) {
+                        log.info("REDIRECT to " + knownServerMap.get(id).toJSONString());
+                        knownServerMap.get(id).getString("hostname");
+                        con.writeMsg(RedirectMsg.getRedirectMsg(knownServerMap.get(id).getString("hostname")
+                                , knownServerMap.get(id).getInteger("port")));
+                        return true;
+                    }
+                }
+                loggedInUser.put(con, new User(username, secret));
                 return false;
             }
             if (StringUtils.isNullorEmpty(secret) || StringUtils.isNullorEmpty(username)) {
@@ -129,6 +141,7 @@ public class Control extends Thread {
                     log.info("login success " + User.getUserString(username, secret));
                     con.writeMsg(LoginSuccessMsg.getLoginSuccessMsg(username));
                     for (String id : knownServerMap.keySet()) {
+                        System.out.println(clientConnections.size() );
                         if (clientConnections.size() >= knownServerMap.get(id).getInteger("load") + 2) {
                             log.info("REDIRECT to " + knownServerMap.get(id).toJSONString());
                             knownServerMap.get(id).getString("hostname");
@@ -313,7 +326,7 @@ public class Control extends Thread {
                 }
                 connection.writeMsg(LockDeniedMsg.getLockDeniedMsg(username, secret));
             }
-            return false;
+            return true;
 
         } else {
             String invalidMsg = InvalidMsg.getInvalidMsg();
@@ -380,10 +393,6 @@ public class Control extends Thread {
                 log.info("received an interrupt, system is shutting down");
                 break;
             }
-//            if (!term) {
-//                log.debug("doing activity");
-//                term = doActivity();
-//            }
 
         }
         log.info("closing " + serverConnections.size() + " server connections");

@@ -257,7 +257,6 @@ public class TextFrame extends JFrame implements ActionListener {
                 }
             }
 
-
             Settings.setSecret(secret);
             ClientSkeleton.getInstance().login();
 

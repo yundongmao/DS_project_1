@@ -2,7 +2,6 @@ package activitystreamer.client;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Set;
 
 
 import activitystreamer.messages.*;
@@ -13,6 +12,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import activitystreamer.util.Settings;
+import sun.jvm.hotspot.asm.Register;
 
 public class ClientSkeleton extends Thread {
     private static final Logger log = LogManager.getLogger(ClientSkeleton.class);
@@ -34,16 +34,31 @@ public class ClientSkeleton extends Thread {
         if (Settings.getRemoteHostname() != null) {
             try {
                 Socket socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-                //TODO
                 con = new Connection(socket, true);
-                String msg = LoginMsg.getLoginMsg(Settings.getUsername(), Settings.getSecret());
-                con.writeMsg(msg);
+                if ("anonymous".equals(Settings.getUsername())){
+                    String msg = LoginMsg.getLoginMsg(Settings.getUsername(), Settings.getSecret());
+                    con.writeMsg(msg);
+                } else if (StringUtils.isNullorEmpty(Settings.getSecret())) {
+                    String randSecret = StringUtils.getRandomString(10);
+                    Settings.setSecret(randSecret);
+                    String msg = RegisterMsg.getRegisterMsg(Settings.getUsername(), Settings.getSecret());
+                    con.writeMsg(msg);
+                    textFrame.setOutputText("auto register with randsecret : " +randSecret);
+                    Thread.sleep(1000);
+                    msg = LoginMsg.getLoginMsg(Settings.getUsername(), Settings.getSecret());
+                    con.writeMsg(msg);
+                } else {
+                    String msg = LoginMsg.getLoginMsg(Settings.getUsername(), Settings.getSecret());
+                    con.writeMsg(msg);
+                }
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":" + Settings.getRemotePort() + " :" + e);
                 textFrame.setLogin();
                 textFrame.setRegister();
                 textFrame.setOutputText("please check the host and port");
 //                System.exit(-1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
         textFrame.setLogin();
@@ -63,7 +78,7 @@ public class ClientSkeleton extends Thread {
         con.closeCon();
     }
 
-    public void loginAfterSuccess(String username,String secret){
+    public void loginAfterSuccess(String username, String secret) {
         String msg = LoginMsg.getLoginMsg(username, secret);
         con.writeMsg(msg);
     }
@@ -99,7 +114,7 @@ public class ClientSkeleton extends Thread {
             String msg = RegisterMsg.getRegisterMsg(username, secret);
             con.writeMsg(msg);
             Thread.sleep(1000);
-            loginAfterSuccess(username,secret);
+            loginAfterSuccess(username, secret);
         } catch (IOException e) {
             log.error("failed to make connection to " + Settings.getRemoteHostname() + ":" + Settings.getRemotePort() + " :" + e);
             //TODO
@@ -158,7 +173,9 @@ public class ClientSkeleton extends Thread {
         } else if ("AUTHENTICATION_FAIL".equals(command)) {
             textFrame.setOutputText(jsonObject);
             return true;
-        }  else {
+        } else if ("SERVER_ANNOUNCE".equals(command)){
+            return false;
+        }else {
             textFrame.setOutputText(jsonObject);
             String invalidMsg = InvalidMsg.getInvalidMsg();
             con.writeMsg(invalidMsg);
