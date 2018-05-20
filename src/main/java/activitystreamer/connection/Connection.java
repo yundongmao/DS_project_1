@@ -73,7 +73,6 @@ public class Connection extends Thread {
         try {
             String data;
             while (!term && (data = inreader.readLine()) != null) {
-
                 if (Settings.isServer()) {
                     term = Control.getInstance().process(this, data);
                 } else {

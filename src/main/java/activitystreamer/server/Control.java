@@ -8,6 +8,7 @@ import java.util.*;
 import activitystreamer.connection.Connection;
 import activitystreamer.datastructure.User;
 import activitystreamer.messages.*;
+import activitystreamer.util.HtmlUtil;
 import activitystreamer.util.Settings;
 import activitystreamer.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
@@ -107,6 +108,7 @@ public class Control extends Thread {
             term = true;
             return true;
         } else if ("LOGIN".equals(command)) {
+
             // change connection isServer
             serverConnections.remove(con);
             if (!clientConnections.contains(con)) {
@@ -135,32 +137,46 @@ public class Control extends Thread {
                 return true;
             }
 
-            if (usernameAndSecretMap.containsKey(username)) {
-                if (usernameAndSecretMap.get(username).toString().equals(secret)) {
-                    //TODO login success message.
-                    log.info("login success " + User.getUserString(username, secret));
-                    con.writeMsg(LoginSuccessMsg.getLoginSuccessMsg(username));
-                    for (String id : knownServerMap.keySet()) {
-                        System.out.println(clientConnections.size() );
-                        if (clientConnections.size() >= knownServerMap.get(id).getInteger("load") + 2) {
-                            log.info("REDIRECT to " + knownServerMap.get(id).toJSONString());
-                            knownServerMap.get(id).getString("hostname");
-                            con.writeMsg(RedirectMsg.getRedirectMsg(knownServerMap.get(id).getString("hostname")
-                                    , knownServerMap.get(id).getInteger("port")));
-                            return true;
-                        }
-                    }
-                    loggedInUser.put(con, new User(username, secret));
-                    return false;
-                } else {
-                    log.info("login fail " + User.getUserString(username, secret));
-                    con.writeMsg(LoginFailedMsg.getLoginFailedMsg());
-                    return true;
-                }
-            } else {
-                con.writeMsg(LoginFailedMsg.getLoginFailedMsg());
+
+
+            String result = HtmlUtil.post(Settings.getDataUrl(),LoginMsg.getLoginMsg(username,secret));
+            JSONObject jsonResult = JSONObject.parseObject(result);
+            String recommand = jsonResult.getString("command");
+            if("LOGIN_SUCCESS".equals(recommand)){
+                con.writeMsg(LoginSuccessMsg.getLoginSuccessMsg(username));
+                return false;
+            }else{
+                //TODO
+                con.writeMsg(result);
                 return true;
             }
+
+//            if (usernameAndSecretMap.containsKey(username)) {
+//                if (usernameAndSecretMap.get(username).toString().equals(secret)) {
+//                    //TODO login success message.
+//                    log.info("login success " + User.getUserString(username, secret));
+//                    con.writeMsg(LoginSuccessMsg.getLoginSuccessMsg(username));
+//                    for (String id : knownServerMap.keySet()) {
+//                        System.out.println(clientConnections.size() );
+//                        if (clientConnections.size() >= knownServerMap.get(id).getInteger("load") + 2) {
+//                            log.info("REDIRECT to " + knownServerMap.get(id).toJSONString());
+//                            knownServerMap.get(id).getString("hostname");
+//                            con.writeMsg(RedirectMsg.getRedirectMsg(knownServerMap.get(id).getString("hostname")
+//                                    , knownServerMap.get(id).getInteger("port")));
+//                            return true;
+//                        }
+//                    }
+//                    loggedInUser.put(con, new User(username, secret));
+//                    return false;
+//                } else {
+//                    log.info("login fail " + User.getUserString(username, secret));
+//                    con.writeMsg(LoginFailedMsg.getLoginFailedMsg());
+//                    return true;
+//                }
+//            } else {
+//                con.writeMsg(LoginFailedMsg.getLoginFailedMsg());
+//                return true;
+//            }
         } else if ("LOGOUT".equals(command)) {
             return true;
         } else if ("ACTIVITY_MESSAGE".equals(command)) {

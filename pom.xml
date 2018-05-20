@@ -51,7 +51,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>activitystreamer.Server</mainClass>
+              <mainClass>activitystreamer.Client</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

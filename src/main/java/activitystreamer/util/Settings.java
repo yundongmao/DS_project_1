@@ -20,6 +20,7 @@ public class Settings {
     private static String secret = null;
     private static String username = "anonymous";
     private static boolean isServer = true;
+    private static String dataUrl = "http://localhost:8080/data";
 
     public static boolean isServer() {
         return isServer;
@@ -108,4 +109,11 @@ public class Settings {
     }
 
 
+    public static String getDataUrl() {
+        return dataUrl;
+    }
+
+    public static void setDataUrl(String dataUrl) {
+        Settings.dataUrl = dataUrl;
+    }
 }
